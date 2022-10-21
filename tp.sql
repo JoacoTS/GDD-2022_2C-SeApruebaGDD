@@ -1,4 +1,6 @@
 
+create database TP_Tablas_separadas
+
 use TP_Tablas_separadas
 
 create table PROVINCIA (

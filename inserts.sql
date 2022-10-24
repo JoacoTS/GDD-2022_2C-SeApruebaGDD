@@ -138,7 +138,6 @@ begin
 end
 go
 
---TODO: Corregir descuento
 create procedure migrar_medio_pago_venta as
 begin
 	insert into MEDIO_PAGO_VENTA
@@ -146,12 +145,9 @@ begin
 	select
 		VENTA_MEDIO_PAGO,
 		VENTA_MEDIO_PAGO_COSTO,
-		(select VENTA_DESCUENTO_IMPORTE from GD2C2022.gd_esquema.Maestra
-		where VENTA_MEDIO_PAGO = VENTA_DESCUENTO_CONCEPTO
-		group by VENTA_DESCUENTO_CONCEPTO, VENTA_DESCUENTO_IMPORTE)
+		round(avg(VENTA_DESCUENTO_IMPORTE/VENTA_TOTAL) ,2)
 	from GD2C2022.gd_esquema.Maestra
-	where VENTA_CANAL is not null
+	where VENTA_MEDIO_PAGO = VENTA_DESCUENTO_CONCEPTO
 	group by VENTA_MEDIO_PAGO, VENTA_MEDIO_PAGO_COSTO
-
 end
 go

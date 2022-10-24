@@ -1,10 +1,10 @@
 
-create database TP_Tablas_separadas
+--create database SE_APRUEBA_GDD
 
-use TP_Tablas_separadas
+use SE_APRUEBA_GDD
 
 create table PROVINCIA (
-	PROVINCIA_CODIGO decimal(19,0),
+	PROVINCIA_CODIGO decimal(19,0) identity(1,1),
 	PROVINCIA_NOMBRE nvarchar(255),
 	PRIMARY KEY (PROVINCIA_CODIGO)
 );
@@ -17,7 +17,7 @@ create table CODIGO_POSTAL (
 );
 
 create table UBICACION (
-	UBICACION_ID decimal(19,0),
+	UBICACION_ID decimal(19,0) identity(1,1),
 	UBICACION_LOCALIDAD nvarchar(255),
 	UBICACION_CODIGO_POSTAL decimal(19,0),
 	PRIMARY KEY (UBICACION_ID),
@@ -25,7 +25,7 @@ create table UBICACION (
 );
 
 create table CLIENTE (
-	CLIENTE_ID decimal(19, 0),
+	CLIENTE_ID decimal(19, 0) identity(1,1),
 	CLIENTE_UBICACION decimal(19, 0),
 	CLIENTE_NOMBRE nvarchar(255),
 	CLIENTE_APELLIDO nvarchar(255),
@@ -39,16 +39,17 @@ create table CLIENTE (
 );
 
 create table CANAL_VENTA (
-	CANAL_VENTA_ID decimal(19, 0),
+	CANAL_VENTA_ID decimal(19, 0) identity(1,1),
 	CANAL_VENTA_TIPO nvarchar(2255),
 	CANAL_VENTA_COSTO decimal(18,2),
 	PRIMARY KEY (CANAL_VENTA_ID)
 );
 
 create table MEDIO_PAGO_VENTA (
-	MEDIO_PAGO_ID decimal(19,0),
+	MEDIO_PAGO_ID decimal(19,0) identity(1,1),
 	MEDIO_PAGO_TIPO nvarchar(255),
 	MEDIO_PAGO_COSTO decimal(18,2),
+	MEDIO_PAGO_DESCUENTO decimal(18, 2),
 	PRIMARY KEY (MEDIO_PAGO_ID)
 );
 

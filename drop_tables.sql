@@ -1,0 +1,27 @@
+
+drop table PROD_X_COMPRA
+drop table DESCUENTO_COMPRA_X_COMPRA
+drop table COMPRA
+drop table DESCUENTO_COMPRA
+drop table MEDIO_PAGO_COMPRA
+drop table PROVEEDOR
+drop table PROD_X_VENTA
+drop table VARIANTE_X_PRODUCTO
+drop table VARIANTE
+drop table TIPO_VARIANTE
+drop table PRODUCTO
+drop table MATERIAL
+drop table CATEGORIA
+drop table MARCA
+drop table CUPON_X_VENTA
+drop table CUPON
+drop table DESCUENTO_VENTA_X_VENTA
+drop table DESCUENTO_VENTA
+drop table VENTA
+drop table ENVIO_VENTA
+drop table MEDIO_PAGO_VENTA
+drop table CANAL_VENTA
+drop table CLIENTE
+drop table UBICACION
+drop table CODIGO_POSTAL
+drop table PROVINCIA

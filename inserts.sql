@@ -67,7 +67,7 @@ begin
 	where CLIENTE_LOCALIDAD is not null
 	group by CLIENTE_CODIGO_POSTAL, CLIENTE_LOCALIDAD
 
-	insert into CODIGO_POSTAL
+	insert into UBICACION
 	select 
 	(
 		select CODIGO_POSTAL

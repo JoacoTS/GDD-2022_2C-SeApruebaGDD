@@ -1,5 +1,8 @@
 USE GD2C2022
 GO
+
+CREATE DATABASE SE_APRUEBA_GDD;
+GO
 ------DROPS FKs
 
 
@@ -114,6 +117,30 @@ IF OBJECT_ID('SE_APRUEBA_GDD.PROVINCIA') IS NOT NULL
  GO
 
 -----DROPS PROCEDURES
+
+IF EXISTS(SELECT [name] FROM sys.procedures WHERE [name] = 'migrar_provincias')
+	DROP PROCEDURE migrar_provincias 
+GO
+
+IF EXISTS(SELECT [name] FROM sys.procedures WHERE [name] = 'migrar_codigo_postal ')
+	DROP PROCEDURE migrar_codigo_postal 
+GO
+
+IF EXISTS(SELECT [name] FROM sys.procedures WHERE [name] = 'migrar_ubicacion')
+	DROP PROCEDURE migrar_piloto 
+GO
+
+IF EXISTS(SELECT [name] FROM sys.procedures WHERE [name] = 'migrar_clientes')
+	DROP PROCEDURE migrar_piloto 
+GO
+
+IF EXISTS(SELECT [name] FROM sys.procedures WHERE [name] = 'migrar_canal_venta ')
+	DROP PROCEDURE migrar_piloto 
+GO
+
+IF EXISTS(SELECT [name] FROM sys.procedures WHERE [name] = 'migrar_medio_pago_venta ')
+	DROP PROCEDURE migrar_piloto 
+GO
 
 
 
@@ -363,7 +390,7 @@ create table SE_APRUEBA_GDD.PROD_X_COMPRA (
 
 
 
---  MIGRACIÓN DE DATOS (INSERTS)
+--  CREACIÓN DE PROCEDURES (INSERTS)
 
 CREATE PROCEDURE migrar_provincias 
 AS
@@ -521,3 +548,35 @@ go
 
 
 
+------------------- EJECUCION DE PROCEDURES: MIGRACION -------------------
+BEGIN TRANSACTION
+BEGIN TRY
+	EXECUTE migrar_provincias
+    EXECUTE migrar_codigo_postal
+    EXECUTE migrar_ubicacion 
+	EXECUTE migrar_clientes 
+    EXECUTE migrar_canal_venta 
+    EXECUTE migrar_medio_pago_venta 
+   -- ...
+END TRY
+BEGIN CATCH
+    ROLLBACK TRANSACTION;
+	THROW 50001, 'Error al migrar las tablas, verifique que las nuevas tablas se encuentren vacías o bien ejecute un DROP de todas las nuevas tablas y vuelva a intentarlo.',1;
+END CATCH
+
+IF (EXISTS (SELECT 1 FROM SE_APRUEBA_GDD.PROVINCIA)
+    AND EXISTS (SELECT 1 FROM SE_APRUEBA_GDD.CODIGO_POSTAL)
+    AND EXISTS (SELECT 1 FROM SE_APRUEBA_GDD.UBICACION)
+    AND EXISTS (SELECT 1 FROM SE_APRUEBA_GDD.CLIENTE)
+    AND EXISTS (SELECT 1 FROM SE_APRUEBA_GDD.CANAL_VENTA)
+    AND EXISTS (SELECT 1 FROM SE_APRUEBA_GDD.MEDIO_PAGO_VENTA)
+	-- ...
+BEGIN
+	PRINT 'Migracion Exitosa';
+	COMMIT TRANSACTION;
+END
+ELSE
+BEGIN
+    ROLLBACK TRANSACTION;
+	THROW 50002, 'Hubo un error al migrar en una o mas tablas. Todos los cambios fueron deshechos, ninguna tabla fue cargada en la base.',1;
+END

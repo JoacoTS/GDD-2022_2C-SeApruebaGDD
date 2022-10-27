@@ -114,36 +114,48 @@ IF OBJECT_ID('SE_APRUEBA_GDD.PROVINCIA') IS NOT NULL
 
 -----DROPS PROCEDURES
 
-IF EXISTS(SELECT [name] FROM sys.procedures WHERE [name] = 'migrar_provincias')
-	DROP PROCEDURE migrar_provincias 
+IF OBJECT_ID('SE_APRUEBA_GDD.migrar_provincias') IS NOT NULL
+	DROP PROCEDURE SE_APRUEBA_GDD.migrar_provincias 
 GO
 
-IF EXISTS(SELECT [name] FROM sys.procedures WHERE [name] = 'migrar_codigo_postal ')
-	DROP PROCEDURE migrar_codigo_postal 
+IF OBJECT_ID('SE_APRUEBA_GDD.migrar_codigo_postal') IS NOT NULL
+	DROP PROCEDURE SE_APRUEBA_GDD.migrar_codigo_postal 
 GO
 
-IF EXISTS(SELECT [name] FROM sys.procedures WHERE [name] = 'migrar_ubicacion')
-	DROP PROCEDURE  migrar_ubicacion
+IF OBJECT_ID('SE_APRUEBA_GDD.migrar_ubicacion') IS NOT NULL
+	DROP PROCEDURE  SE_APRUEBA_GDD.migrar_ubicacion
 GO
 
-IF EXISTS(SELECT [name] FROM sys.procedures WHERE [name] = 'migrar_clientes')
-	DROP PROCEDURE migrar_clientes 
+IF OBJECT_ID('SE_APRUEBA_GDD.migrar_clientes') IS NOT NULL
+	DROP PROCEDURE SE_APRUEBA_GDD.migrar_clientes 
 GO
 
-IF EXISTS(SELECT [name] FROM sys.procedures WHERE [name] = 'migrar_canal_venta ')
-	DROP PROCEDURE migrar_canal_venta 
+IF OBJECT_ID('SE_APRUEBA_GDD.migrar_canal_venta') IS NOT NULL
+	DROP PROCEDURE SE_APRUEBA_GDD.migrar_canal_venta 
 GO
 
-IF EXISTS(SELECT [name] FROM sys.procedures WHERE [name] = 'migrar_medio_pago_venta ')
-	DROP PROCEDURE migrar_medio_pago_venta 
+IF OBJECT_ID('SE_APRUEBA_GDD.migrar_medio_pago_venta') IS NOT NULL
+	DROP PROCEDURE SE_APRUEBA_GDD.migrar_medio_pago_venta 
 GO
 
-IF EXISTS(SELECT [name] FROM sys.procedures WHERE [name] = 'migrar_envio_venta ')
-	DROP PROCEDURE migrar_envio_venta 
+IF OBJECT_ID('SE_APRUEBA_GDD.migrar_envio_venta') IS NOT NULL
+	DROP PROCEDURE SE_APRUEBA_GDD.migrar_envio_venta 
 GO
 
-IF EXISTS(SELECT [name] FROM sys.procedures WHERE [name] = 'migrar_venta ')
-	DROP PROCEDURE migrar_venta 
+IF OBJECT_ID('SE_APRUEBA_GDD.migrar_venta') IS NOT NULL
+	DROP PROCEDURE SE_APRUEBA_GDD.migrar_venta 
+GO
+
+IF OBJECT_ID('SE_APRUEBA_GDD.migrar_descuento_venta') IS NOT NULL
+	DROP PROCEDURE SE_APRUEBA_GDD.migrar_descuento_venta 
+GO
+
+IF OBJECT_ID('SE_APRUEBA_GDD.migrar_descuento_venta_x_venta') IS NOT NULL
+	DROP PROCEDURE SE_APRUEBA_GDD.migrar_descuento_venta_x_venta 
+GO
+
+IF OBJECT_ID('SE_APRUEBA_GDD.migrar_cupon') IS NOT NULL
+	DROP PROCEDURE SE_APRUEBA_GDD.migrar_cupon 
 GO
 
 -----DROPS TRIGGERS
@@ -392,7 +404,7 @@ GO
 
 --  CREACIÓN DE PROCEDURES (INSERTS)
 
-CREATE PROCEDURE migrar_provincias 
+CREATE PROCEDURE SE_APRUEBA_GDD.migrar_provincias 
 AS
 BEGIN
 	INSERT INTO SE_APRUEBA_GDD.PROVINCIA
@@ -409,7 +421,7 @@ BEGIN
 END
 GO
 
-CREATE PROCEDURE migrar_codigo_postal 
+CREATE PROCEDURE SE_APRUEBA_GDD.migrar_codigo_postal 
 AS
 BEGIN
 	INSERT INTO SE_APRUEBA_GDD.CODIGO_POSTAL
@@ -449,7 +461,7 @@ BEGIN
 END
 GO
 
-create procedure migrar_ubicacion as
+create procedure SE_APRUEBA_GDD.migrar_ubicacion as
 begin
 	insert into SE_APRUEBA_GDD.UBICACION
 	(UBICACION_CODIGO_POSTAL, UBICACION_LOCALIDAD)
@@ -480,7 +492,7 @@ begin
 end
 go
 
-create procedure migrar_clientes as
+create procedure SE_APRUEBA_GDD.migrar_clientes as
 begin
 	insert into SE_APRUEBA_GDD.CLIENTE
 	(CLIENTE_UBICACION,
@@ -519,7 +531,7 @@ begin
 end
 go
 
-create procedure migrar_canal_venta as
+create procedure SE_APRUEBA_GDD.migrar_canal_venta as
 begin
 	insert into SE_APRUEBA_GDD.CANAL_VENTA
 	(CANAL_VENTA_TIPO, CANAL_VENTA_COSTO)
@@ -533,7 +545,7 @@ begin
 end
 go
 
-create procedure migrar_medio_pago_venta as
+create procedure SE_APRUEBA_GDD.migrar_medio_pago_venta as
 begin
 	insert into SE_APRUEBA_GDD.MEDIO_PAGO_VENTA
 	(MEDIO_PAGO_TIPO, MEDIO_PAGO_COSTO, MEDIO_PAGO_DESCUENTO)
@@ -549,7 +561,7 @@ begin
 end
 go
 
-create procedure migrar_envio_venta as
+create procedure SE_APRUEBA_GDD.migrar_envio_venta as
 begin
 	insert into SE_APRUEBA_GDD.ENVIO_VENTA
 	(ENVIO_VENTA_TIPO, ENVIO_VENTA_UBICACION, ENVIO_VENTA_PRECIO)
@@ -568,7 +580,7 @@ end
 go
 
 
-create procedure migrar_venta as
+create procedure SE_APRUEBA_GDD.migrar_venta as
 begin
 	insert into SE_APRUEBA_GDD.VENTA
 	(VENTA_ID, VENTA_FECHA, VENTA_CLIENTE, VENTA_ENVIO, VENTA_CANAL, VENTA_MEDIO_PAGO, VENTA_TOTAL)
@@ -616,17 +628,74 @@ begin
 end
 go
 
+/*
+create procedure SE_APRUEBA_GDD.migrar_descuento_venta as
+begin
+	insert into SE_APRUEBA_GDD.DESCUENTO_VENTA
+	(DESCUENTO_CONCEPTO_VENTA, DESCUENTO_TIPO)
+	select
+		VENTA_DESCUENTO_CONCEPTO,
+		-- tipo?
+	from gd_esquema.Maestra
+	where VENTA_DESCUENTO_CONCEPTO is not null
+	group by VENTA_DESCUENTO_CONCEPTO
+end
+go
+
+create procedure SE_APRUEBA_GDD.migrar_descuento_venta_x_venta as
+begin
+	insert into SE_APRUEBA_GDD.DESCUENTO_VENTA_X_VENTA
+	(VENTA_ID, DESCUENTO_CONCEPTO_VENTA_ID, DESCUENTO_VENTA_IMPORTE)
+	select
+		(select
+			VENTA_ID 
+			from SE_APRUEBA_GDD.VENTA
+			where VENTA_CODIGO = VENTA_ID),
+		(select
+			DESCUENTO_CONCEPTO_VENTA 
+			from SE_APRUEBA_GDD.DESCUENTO_VENTA
+			where VENTA_DESCUENTO_CONCEPTO = DESCUENTO_CONCEPTO_VENTA)
+		VENTA_DESCUENTO_IMPORTE
+	from gd_esquema.Maestra
+	where VENTA_DESCUENTO_CONCEPTO and VENTA_DESCUENTO_IMPORTE is not null
+	group by VENTA_CODIGO, VENTA_DESCUENTO_CONCEPTO, VENTA_DESCUENTO_IMPORTE
+end
+go
+
+create procedure SE_APRUEBA_GDD.migrar_cupon as
+begin
+	insert into SE_APRUEBA_GDD.CUPON
+	(CUPON_CODIGO, CUPON_IMPORTE, FECHA_DESDE, FECHA_HASTA, CUPON_TIPO, CUPON_VALOR)
+	select
+		VENTA_CUPON_CODIGO,
+		VENTA_CUPON_FECHA_DESDE,
+		VENTA_CUPON_FECHA_HASTA,
+		VENTA_CUPON_TIPO,
+		VENTA_CUPON_VALOR
+	from gd_esquema.Maestra
+	where VENTA_CUPON_CODIGO is not null
+	group by VENTA_DESCUENTO_CONCEPTO
+end
+go
+
+*/
+
 ------------------- EJECUCION DE PROCEDURES: MIGRACION -------------------
 --BEGIN TRANSACTION
 --BEGIN TRY
-	EXECUTE migrar_provincias
-    EXECUTE migrar_codigo_postal
-    EXECUTE migrar_ubicacion 
-	EXECUTE migrar_clientes 
-    EXECUTE migrar_canal_venta 
-    EXECUTE migrar_medio_pago_venta 
-	EXECUTE migrar_envio_venta
-	EXECUTE migrar_venta
+	EXECUTE SE_APRUEBA_GDD.migrar_provincias
+    EXECUTE SE_APRUEBA_GDD.migrar_codigo_postal
+    EXECUTE SE_APRUEBA_GDD.migrar_ubicacion 
+	EXECUTE SE_APRUEBA_GDD.migrar_clientes 
+    EXECUTE SE_APRUEBA_GDD.migrar_canal_venta 
+    EXECUTE SE_APRUEBA_GDD.migrar_medio_pago_venta 
+	EXECUTE SE_APRUEBA_GDD.migrar_envio_venta
+	EXECUTE SE_APRUEBA_GDD.migrar_venta
+/*
+	EXECUTE SE_APRUEBA_GDD.migrar_descuento_venta
+	EXECUTE SE_APRUEBA_GDD.migrar_descuento_venta_x_venta
+	EXECUTE SE_APRUEBA_GDD.migrar_cupon
+*/
    -- ...
 /*END TRY
 BEGIN CATCH

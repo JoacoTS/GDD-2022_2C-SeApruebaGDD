@@ -158,6 +158,21 @@ IF OBJECT_ID('SE_APRUEBA_GDD.migrar_cupon') IS NOT NULL
 	DROP PROCEDURE SE_APRUEBA_GDD.migrar_cupon 
 GO
 
+IF OBJECT_ID('SE_APRUEBA_GDD.migrar_cupon_x_venta') IS NOT NULL
+	DROP PROCEDURE SE_APRUEBA_GDD.migrar_cupon_x_venta 
+GO
+
+IF OBJECT_ID('SE_APRUEBA_GDD.migrar_marca') IS NOT NULL
+	DROP PROCEDURE SE_APRUEBA_GDD.migrar_marca 
+GO
+
+IF OBJECT_ID('SE_APRUEBA_GDD.migrar_categoria') IS NOT NULL
+	DROP PROCEDURE SE_APRUEBA_GDD.migrar_categoria
+GO
+
+IF OBJECT_ID('SE_APRUEBA_GDD.migrar_material') IS NOT NULL
+	DROP PROCEDURE SE_APRUEBA_GDD.migrar_material 
+GO
 -----DROPS TRIGGERS
 
 
@@ -678,6 +693,49 @@ begin
 end
 go
 
+create procedure SE_APRUEBA_GDD.migrar_cupon_x_venta as
+begin
+	insert into SE_APRUEBA_GDD.CUPON_X_VENTA
+	-- TODO
+end
+go
+
+create procedure SE_APRUEBA_GDD.migrar_marca as
+begin
+	insert into SE_APRUEBA_GDD.MARCA
+	(MARCA_DESCRIPCION)
+	select
+		PRODUCTO_MARCA,
+	from gd_esquema.Maestra
+	where PRODUCTO_MARCA is not null
+	group by PRODUCTO_MARCA
+end
+go
+
+create procedure SE_APRUEBA_GDD.migrar_categoria as
+begin
+	insert into SE_APRUEBA_GDD.CATEGORIA
+	(CATEGORIA_DESCRIPCION)
+	select
+		PRODUCTO_CATEGORIA,
+	from gd_esquema.Maestra
+	where PRODUCTO_CATEGORIA is not null
+	group by PRODUCTO_CATEGORIA
+end
+go
+
+create procedure SE_APRUEBA_GDD.migrar_material as
+begin
+	insert into SE_APRUEBA_GDD.MATERIAL
+	(MATERIAL_DESCRIPCION)
+	select
+		PRODUCTO_MATERIAL,
+	from gd_esquema.Maestra
+	where PRODUCTO_MATERIAL is not null
+	group by PRODUCTO_MATERIAL
+end
+go
+
 */
 
 ------------------- EJECUCION DE PROCEDURES: MIGRACION -------------------
@@ -695,6 +753,10 @@ go
 	EXECUTE SE_APRUEBA_GDD.migrar_descuento_venta
 	EXECUTE SE_APRUEBA_GDD.migrar_descuento_venta_x_venta
 	EXECUTE SE_APRUEBA_GDD.migrar_cupon
+	EXECUTE SE_APRUEBA_GDD.migrar_cupon_x_venta
+	EXECUTE SE_APRUEBA_GDD.migrar_marca
+	EXECUTE SE_APRUEBA_GDD.migrar_categoria
+	EXECUTE SE_APRUEBA_GDD.migrar_material
 */
    -- ...
 /*END TRY

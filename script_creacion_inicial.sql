@@ -173,6 +173,18 @@ GO
 IF OBJECT_ID('SE_APRUEBA_GDD.migrar_material') IS NOT NULL
 	DROP PROCEDURE SE_APRUEBA_GDD.migrar_material 
 GO
+
+IF OBJECT_ID('SE_APRUEBA_GDD.migrar_producto') IS NOT NULL
+	DROP PROCEDURE SE_APRUEBA_GDD.migrar_producto 
+GO
+
+IF OBJECT_ID('SE_APRUEBA_GDD.migrar_tipo_variante') IS NOT NULL
+	DROP PROCEDURE SE_APRUEBA_GDD.migrar_tipo_variante
+GO
+
+IF OBJECT_ID('SE_APRUEBA_GDD.migrar_variante') IS NOT NULL
+	DROP PROCEDURE SE_APRUEBA_GDD.migrar_variante 
+GO
 -----DROPS TRIGGERS
 
 
@@ -736,6 +748,61 @@ begin
 end
 go
 
+create procedure SE_APRUEBA_GDD.migrar_producto as
+begin
+	insert into SE_APRUEBA_GDD.PRODUCTO
+	(PRODUCTO_ID, PRODUCTO_DESCRIPCION, PRODUCTO_NOMBRE, PRODUCTO_MARCA, PRODUCTO_CATEGORIA, PRODUCTO_MATERIAL)
+	select
+		PRODUCTO_CODIGO,
+		PRODUCTO_DESCRIPCION,
+		PRODUCTO_NOMBRE,
+		(select
+			MARCA_ID 
+			from SE_APRUEBA_GDD.MARCA
+			where PRODUCTO_MARCA = MARCA_DESCRIPCION),
+		(select
+			CATEGORIA_ID 
+			from SE_APRUEBA_GDD.CATEGORIA
+			where PRODUCTO_CATEGORIA = CATEGORIA_DESCRIPCION),
+		(select
+			MATERIAL_ID 
+			from SE_APRUEBA_GDD.MATERIAL
+			where PRODUCTO_MATERIAL = MATERIAL_DESCRIPCION),
+	from gd_esquema.Maestra
+	where PRODUCTO_CODIGO is not null
+	group by PRODUCTO_CODIGO
+end
+go
+
+create procedure SE_APRUEBA_GDD.migrar_tipo_variante as
+begin
+	insert into SE_APRUEBA_GDD.TIPO_VARIANTE
+	(TIPO_VARIANTE_DETALLE)
+	select
+		PRODUCTO_TIPO_VARIANTE
+	from gd_esquema.Maestra
+	where PRODUCTO_TIPO_VARIANTE is not null
+	group by PRODUCTO_TIPO_VARIANTE
+end
+go
+
+create procedure SE_APRUEBA_GDD.migrar_variante as
+begin
+	insert into SE_APRUEBA_GDD.VARIANTE
+	(VARIANTE_ID, VARIANTE_TIPO_VAR_ID, VARIANTE_DETALLE)
+	select
+		PRODCUTO_VARIANTE_CODIGO,
+		(select
+			TIPO_VARIANTE_ID 
+			from SE_APRUEBA_GDD.TIPO_VARIANTE
+			where PRODUCTO_TIPO_VARIANTE = TIPO_VARIANTE_DETALLE),
+		PRODCUTO_VARIANTE_DETALLE,
+	from gd_esquema.Maestra
+	where PRODCUTO_VARIANTE_CODIGO is not null
+	group by PRODCUTO_VARIANTE_CODIGO
+end
+go
+
 */
 
 ------------------- EJECUCION DE PROCEDURES: MIGRACION -------------------
@@ -757,6 +824,9 @@ go
 	EXECUTE SE_APRUEBA_GDD.migrar_marca
 	EXECUTE SE_APRUEBA_GDD.migrar_categoria
 	EXECUTE SE_APRUEBA_GDD.migrar_material
+	EXECUTE SE_APRUEBA_GDD.migrar_producto
+	EXECUTE SE_APRUEBA_GDD.migrar_tipo_variante
+	EXECUTE SE_APRUEBA_GDD.migrar_variante
 */
    -- ...
 /*END TRY

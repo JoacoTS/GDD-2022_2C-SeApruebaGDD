@@ -198,8 +198,8 @@ IF OBJECT_ID('SE_APRUEBA_GDD.migrar_medio_pago_compra') IS NOT NULL
 	DROP PROCEDURE SE_APRUEBA_GDD.migrar_medio_pago_compra 
 GO
 
-IF OBJECT_ID('SE_APRUEBA_GDD.migrar_compras') IS NOT NULL
-	DROP PROCEDURE SE_APRUEBA_GDD.migrar_compras 
+IF OBJECT_ID('SE_APRUEBA_GDD.migrar_compra') IS NOT NULL
+	DROP PROCEDURE SE_APRUEBA_GDD.migrar_compra 
 GO
 
 IF OBJECT_ID('SE_APRUEBA_GDD.migrar_prod_x_venta') IS NOT NULL
@@ -208,6 +208,14 @@ GO
 
 IF OBJECT_ID('SE_APRUEBA_GDD.migrar_prod_x_compra') IS NOT NULL
 	DROP PROCEDURE SE_APRUEBA_GDD.migrar_prod_x_compra 
+GO
+
+IF OBJECT_ID('SE_APRUEBA_GDD.migrar_descuento_compra') IS NOT NULL
+	DROP PROCEDURE SE_APRUEBA_GDD.migrar_descuento_compra 
+GO
+
+IF OBJECT_ID('SE_APRUEBA_GDD.migrar_descuento_compra_x_compra') IS NOT NULL
+	DROP PROCEDURE SE_APRUEBA_GDD.migrar_descuento_compra_x_compra 
 GO
 -----DROPS TRIGGERS
 
@@ -925,7 +933,7 @@ begin
 end
 go
 
-create procedure SE_APRUEBA_GDD.migrar_compras as
+create procedure SE_APRUEBA_GDD.migrar_compra as
 begin
 	insert into SE_APRUEBA_GDD.COMPRA
 	(COMPRA_NUMERO, COMPRA_PROVEEDOR, COMPRA_MEDIO_PAGO, COMPRA_FECHA, COMPRA_TOTAL)
@@ -986,6 +994,38 @@ begin
 end
 go
 
+/*
+create procedure SE_APRUEBA_GDD.migrar_descuento_compra as
+begin
+	insert into SE_APRUEBA_GDD.DESCUENTO_COMPRA
+	(DESCUENTO_COMPRA_CODIGO, DESCUENTO_COMPRA_VALOR)
+	select
+		DESCUENTO_COMPRA_CODIGO,
+		DESCUENTO_COMPRA_VALOR
+	from gd_esquema.Maestra
+	where DESCUENTO_COMPRA_CODIGO is not null
+	group by DESCUENTO_COMPRA_CODIGO, DESCUENTO_COMPRA_VALOR
+end
+go
+
+create procedure SE_APRUEBA_GDD.migrar_descuento_compra_x_compra as
+begin
+	insert into SE_APRUEBA_GDD.DESCUENTO_COMPRA_X_COMPRA
+	(DESCUENTO_COMP_CODIGO, COMP_CODIGO)
+	(select
+		DESCUENTO_COMPRA_CODIGO 
+		from SE_APRUEBA_GDD.DESCUENTO_COMPRA
+		-- where VENTA_CODIGO = VENTA_ID),
+	(select
+		COMPRA_NUMERO 
+		from SE_APRUEBA_GDD.COMPRA
+		--where VENTA_DESCUENTO_CONCEPTO = DESCUENTO_CONCEPTO_VENTA)
+	
+end
+go
+
+*/
+
 ------------------- EJECUCION DE PROCEDURES: MIGRACION -------------------
 --BEGIN TRANSACTION
 --BEGIN TRY
@@ -1009,9 +1049,11 @@ go
 	EXECUTE SE_APRUEBA_GDD.migrar_variante
 	EXECUTE SE_APRUEBA_GDD.migrar_variante_x_producto
 	EXECUTE SE_APRUEBA_GDD.migrar_medio_pago_compra
-	EXECUTE SE_APRUEBA_GDD.migrar_compras
+	EXECUTE SE_APRUEBA_GDD.migrar_compra
 	EXECUTE SE_APRUEBA_GDD.migrar_prod_x_venta
 	EXECUTE SE_APRUEBA_GDD.migrar_prod_x_compra
+	--EXECUTE SE_APRUEBA_GDD.migrar_descuento_compra
+	--EXECUTE SE_APRUEBA_GDD.migrar_descuento_compra_x_compra
    -- ...
 /*END TRY
 BEGIN CATCH

@@ -994,7 +994,6 @@ begin
 end
 go
 
-/*
 create procedure SE_APRUEBA_GDD.migrar_descuento_compra as
 begin
 	insert into SE_APRUEBA_GDD.DESCUENTO_COMPRA
@@ -1012,19 +1011,16 @@ create procedure SE_APRUEBA_GDD.migrar_descuento_compra_x_compra as
 begin
 	insert into SE_APRUEBA_GDD.DESCUENTO_COMPRA_X_COMPRA
 	(DESCUENTO_COMP_CODIGO, COMP_CODIGO)
-	(select
-		DESCUENTO_COMPRA_CODIGO 
-		from SE_APRUEBA_GDD.DESCUENTO_COMPRA
-		-- where VENTA_CODIGO = VENTA_ID),
-	(select
-		COMPRA_NUMERO 
-		from SE_APRUEBA_GDD.COMPRA
-		--where VENTA_DESCUENTO_CONCEPTO = DESCUENTO_CONCEPTO_VENTA)
-	
+	select
+		DESCUENTO_COMPRA_CODIGO,
+		COMPRA_NUMERO
+	from gd_esquema.Maestra
+	where DESCUENTO_COMPRA_CODIGO is not null and COMPRA_NUMERO is not null
+	group by
+		DESCUENTO_COMPRA_CODIGO,
+		COMPRA_NUMERO	
 end
 go
-
-*/
 
 ------------------- EJECUCION DE PROCEDURES: MIGRACION -------------------
 --BEGIN TRANSACTION
@@ -1052,8 +1048,8 @@ go
 	EXECUTE SE_APRUEBA_GDD.migrar_compra
 	EXECUTE SE_APRUEBA_GDD.migrar_prod_x_venta
 	EXECUTE SE_APRUEBA_GDD.migrar_prod_x_compra
-	--EXECUTE SE_APRUEBA_GDD.migrar_descuento_compra
-	--EXECUTE SE_APRUEBA_GDD.migrar_descuento_compra_x_compra
+	EXECUTE SE_APRUEBA_GDD.migrar_descuento_compra
+	EXECUTE SE_APRUEBA_GDD.migrar_descuento_compra_x_compra
    -- ...
 /*END TRY
 BEGIN CATCH

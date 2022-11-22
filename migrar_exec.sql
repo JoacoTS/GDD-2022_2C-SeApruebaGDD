@@ -1,8 +1,0 @@
-
-
-exec migrar_provincias
-exec migrar_codigo_postal
-exec migrar_ubicacion
-exec migrar_clientes
-exec migrar_canal_venta
-exec migrar_medio_pago_venta

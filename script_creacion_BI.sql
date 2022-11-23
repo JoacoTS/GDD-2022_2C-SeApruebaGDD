@@ -5,6 +5,10 @@ GO
 
 -- DROP DE VIEWS ----------------------------------------------------------------
 
+IF OBJECT_ID('SE_APRUEBA_GDD.BI_V_') IS NOT NULL
+  DROP VIEW SE_APRUEBA_GDD.BI_V_
+  GO
+
 -- DROP TABLAS DIMENSIONALES ---------------------------------------------------------------
 
 IF OBJECT_ID('SE_APRUEBA_GDD.BI_FECHA') IS NOT NULL
@@ -381,4 +385,63 @@ create procedure SE_APRUEBA_GDD.BI_MIGRAR_COMPRA as
 begin
 	-- TODO
 end
+go
+
+
+--  CREACIÓN DE VIEWS
+
+/*
+
+Las ganancias mensuales de cada canal de venta.
+Se entiende por ganancias al total de las ventas, menos el total de las
+compras, menos los costos de transacción totales aplicados asociados los
+medios de pagos utilizados en las mismas.
+
+*/
+
+create view SE_APRUEBA_GDD.BI_V_GANANCIAS_CANAL_VENTA
+as
+    select  
+        CANAL_VENTA_ID,
+        CANAL_VENTA_TIPO,
+        ((select
+            sum(VENTA_TOTAL - CANAL_VENTA_COSTO - MEDIO_PAGO_COSTO)
+        from BI_VENTA
+        join BI_CANAL_VENTA on VENTA_CANAL = CANAL_VENTA_ID
+        join BI_MEDIO_PAGO_VENTA on VENTA_MEDIO_PAGO = MEDIO_PAGO_ID
+        where VENTA_CANAL = CANAL_VENTA_ID
+        group by VENTA_CANAL)
+
+        )
+
+    from BI_CANAL_VENTA
+go
+
+/*
+
+Los 5 productos con mayor rentabilidad anual, con sus respectivos %
+Se entiende por rentabilidad a los ingresos generados por el producto
+(ventas) durante el periodo menos la inversión realizada en el producto
+(compras) durante el periodo, todo esto sobre dichos ingresos.
+Valor expresado en porcentaje.
+Para simplificar, no es necesario tener en cuenta los descuentos aplicados.
+
+*/
+
+create view SE_APRUEBA_GDD.BI_V_PROD_MAYOR_RENT
+as
+    select  
+        PRODUCTO_ID,
+        PRODUCTO_NOMBRE,
+        PRODUCTO_DESCRIPCION,
+        PRODUCTO_CATEGORIA,
+        (select
+            sum(VENTA_PRECIO_TOTAL) -- entiendo que hay q sumar la tabla prod x venta y no se si tambien la de variante
+        from BI_VENTA
+        where PRODUCTO_ID = venta
+        group by
+        )
+        
+        
+    from BI_PRODUCTO
 go

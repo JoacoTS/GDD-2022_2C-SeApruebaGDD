@@ -425,7 +425,7 @@ begin
     where c2.CLIENTE_ID = c.CLIENTE_ID)
     PRODUCTO_ID,
     CATEGORIA_ID,
-    DESCUENTO_VENTA_ID
+    DESCUENTO_VENTA_ID,
     sum(pv.VENTA_PRODUCTO_CANTIDAD),
     sum(VENTA_PRECIO_TOTAL)
   from SE_APRUEBA_GDD.VENTA v join BI_FECHA f on year(v.VENTA_FECHA) = f.FECHA_AÑO and month(v.VENTA_FECHA) = f.FECHA_MES
@@ -436,7 +436,7 @@ begin
   join VARIANTE_X_PRODUCTO vp on pv.VARIANTE_X_PRODUCTO_ID = vp.VARIANTE_X_PRODUCTO_ID
   join PRODUCTO p on p.PRODUCTO_ID = vp.PRODUCTO_ID
   join CATEGORIA cat on cat.CATEGORIA_ID = p.PRODUCTO_CATEGORIA
-  group by p.PRODUCTO_ID, v.VENTA_ID
+  group by  VENTA_ID, FECHA_ID, CLIENTE_ID, MEDIO_PAGO_ID, CANAL_VENTA_ID, PRODUCTO_ID, CATEGORIA_ID, DESCUENTO_VENTA_ID
 
 end
 go
@@ -456,7 +456,7 @@ begin
     where p2.PROVEEDOR_CUIT = p.PROVEEDOR_CUIT)
     PRODUCTO_ID,
     CATEGORIA_ID,
-    DESCUENTO_VENTA_ID
+    DESCUENTO_VENTA_ID,
     sum(pv.VENTA_PRODUCTO_CANTIDAD),
     sum(VENTA_PRECIO_TOTAL)
   from SE_APRUEBA_GDD.COMPRA c join BI_FECHA f on year(v.VENTA_FECHA) = f.FECHA_AÑO and month(v.VENTA_FECHA) = f.FECHA_MES
@@ -466,7 +466,7 @@ begin
   join VARIANTE_X_PRODUCTO vp on pc.VARIANTE_X_PRODUCTO_ID = vp.VARIANTE_X_PRODUCTO_ID
   join PRODUCTO p on p.PRODUCTO_ID = vp.PRODUCTO_ID
   join CATEGORIA cat on cat.CATEGORIA_ID = p.PRODUCTO_CATEGORIA
-  group by p.PRODUCTO_ID, c.COMPRA_NUMERO
+  group by COMPRA_NUMERO, FECHA_ID, PROVEEDOR_CUIT, MEDIO_PAGO_ID, PRODUCTO_ID, CATEGORIA_ID, DESCUENTO_VENTA_ID
 
 end
 go
@@ -485,20 +485,29 @@ medios de pagos utilizados en las mismas.
 
 create view SE_APRUEBA_GDD.BI_V_GANANCIAS_CANAL_VENTA
 as
-    select  
-        CANAL_VENTA_ID,
-        CANAL_VENTA_TIPO,
-        ((select
-            sum(VENTA_TOTAL - CANAL_VENTA_COSTO - MEDIO_PAGO_COSTO)
-        from BI_VENTA
-        join BI_CANAL_VENTA on VENTA_CANAL = CANAL_VENTA_ID
-        join BI_MEDIO_PAGO_VENTA on VENTA_MEDIO_PAGO = MEDIO_PAGO_ID
-        where VENTA_CANAL = CANAL_VENTA_ID
-        group by VENTA_CANAL)
-
-        )
-
-    from BI_CANAL_VENTA
+  select  
+      CANAL_VENTA_ID,
+      CANAL_VENTA_TIPO,
+      FECHA_MES,
+      FECHA_AÑO,
+      sum(PRECIO - 
+          (CANAL_VENTA_COSTO / (select
+                                count(*) 
+                                from BI_VENTA v2
+                                where v2.VENTA_ID = v.VENTA_ID
+                                group by VENTA_ID, VENTA_CANAL)) - 
+          ( MEDIO_PAGO_COSTO / (select
+                                  count(*) 
+                                  from BI_VENTA v2
+                                  where v2.VENTA_ID = v.VENTA_ID
+                                  group by VENTA_ID, VENTA_MEDIO_PAGO)) )
+          
+      from BI_VENTA v
+      join BI_CANAL_VENTA cv on v.VENTA_CANAL = cv.CANAL_VENTA_ID
+      join BI_FECHA f on v.FECHA_ID = f.FECHA_ID
+      join BI_MEDIO_PAGO_VENTA on VENTA_MEDIO_PAGO = MEDIO_PAGO_ID
+      group by CANAL_VENTA_ID
+  from BI_CANAL_VENTA
 go
 
 /*

@@ -149,8 +149,7 @@ GO
 
 -- CREACION ESQUEMA
 
-CREATE SCHEMA SE_APRUEBA_GDD -- Después de authorization vá la contraseña
-
+CREATE SCHEMA SE_APRUEBA_GDD 
 GO
 
 -- CREACIÓN TABLAS DIMENSIONALES
@@ -373,8 +372,8 @@ create procedure SE_APRUEBA_GDD.BI_MIGRAR_DESCUENTO_VENTA as
 begin
 	insert into SE_APRUEBA_GDD.BI_DESCUENTO_VENTA(DESCUENTO_VENTA_ID, DESCUENTO_VENTA_IMPORTE)
     select 
-    DESCUENTO_X_VENTA_ID decimal(19,0),
-    DESCUENTO_VENTA_IMPORTE decimal(18,2)
+    DESCUENTO_X_VENTA_ID,
+    DESCUENTO_VENTA_IMPORTE
     from SE_APRUEBA_GDD.DESCUENTO_VENTA_X_VENTA
 end
 go
@@ -383,8 +382,8 @@ create procedure SE_APRUEBA_GDD.BI_MIGRAR_DESCUENTO_COMPRA as
 begin
 	insert into SE_APRUEBA_GDD.BI_DESCUENTO_COMPRA(DESCUENTO_COMPRA_CODIGO, DESCUENTO_COMPRA_VALOR)
     select 
-    DESCUENTO_COMPRA_CODIGO decimal(19,0),
-    DESCUENTO_COMPRA_VALOR decimal(18,2)
+    DESCUENTO_COMPRA_CODIGO,
+    DESCUENTO_COMPRA_VALOR
     from SE_APRUEBA_GDD.DESCUENTO_COMPRA
 end
 go
@@ -483,7 +482,7 @@ END
 
 
 --  CREACIÓN DE PROCEDURES DE TABLAS DE HECHOS
-
+go
 create procedure SE_APRUEBA_GDD.BI_MIGRAR_VENTA as
 begin
 	insert into SE_APRUEBA_GDD.BI_VENTA (FECHA_ID, CLIENTE_ID, RANGO_ID, MEDIO_PAGO_ID, CANAL_VENTA_ID, PROVINCIA_ID, PRODUCTO_ID, CATEGORIA_ID, DESCUENTO_VENTA_ID, CANTIDAD, PRECIO)
@@ -494,10 +493,10 @@ begin
     (select
       RANGO_ID
     from BI_RANGO_ETARIO
-    where (year(getdate()) - year(c.CLIENTE_FECHA_NAC) + case when month(getdate) > month(c.CLIENTE_FECHA_NAC) 
-                                                          then 1 
-                                                          else 0 end) 
-                                                          between RANGO_EDAD_INI and RANGO_EDAD_FIN
+    where (year(getdate()) - year(c.CLIENTE_FECHA_NAC) + case when month(getdate()) > month(c.CLIENTE_FECHA_NAC) 
+                                                          then 0 
+                                                          else -1 end) 
+                                                          between RANGO_EDAD_INI and RANGO_EDAD_FIN),
     MEDIO_PAGO_ID,
     CANAL_VENTA_ID,
     (select
@@ -568,11 +567,12 @@ medios de pagos utilizados en las mismas.
 create view SE_APRUEBA_GDD.BI_V_GANANCIAS_CANAL_VENTA
 as
   select  
-      CANAL_VENTA_ID,
+      v.CANAL_VENTA_ID,
       CANAL_VENTA_TIPO,
       FECHA_MES,
       FECHA_AÑO,
-      sum(PRECIO - 
+	  sum(v.CANTIDAD * v.PRECIO) - sum(v.CANTIDAD * c.PRECIO) - sum(mp.MEDIO_PAGO_COSTO) ganancias
+      /*sum(PRECIO - 
           (CANAL_VENTA_COSTO / (select
                                 count(*) 
                                 from BI_VENTA v2
@@ -582,14 +582,18 @@ as
                                   count(*) 
                                   from BI_VENTA v2
                                   where v2.VENTA_ID = v.VENTA_ID
-                                  group by VENTA_ID, VENTA_MEDIO_PAGO)) )
+                                  group by VENTA_ID, VENTA_MEDIO_PAGO)) )*/
           
-      from BI_VENTA v
-      join BI_CANAL_VENTA cv on v.VENTA_CANAL = cv.CANAL_VENTA_ID
-      join BI_FECHA f on v.FECHA_ID = f.FECHA_ID
-      join BI_MEDIO_PAGO_VENTA on VENTA_MEDIO_PAGO = MEDIO_PAGO_ID
-      group by CANAL_VENTA_ID
-  from BI_CANAL_VENTA
+      from SE_APRUEBA_GDD.BI_VENTA v
+      join SE_APRUEBA_GDD.BI_CANAL_VENTA cv on v.CANAL_VENTA_ID = cv.CANAL_VENTA_ID
+      join SE_APRUEBA_GDD.BI_FECHA f on v.FECHA_ID = f.FECHA_ID
+      join SE_APRUEBA_GDD.BI_MEDIO_PAGO_VENTA mp on v.MEDIO_PAGO_ID = mp.MEDIO_PAGO_ID
+	  join SE_APRUEBA_GDD.BI_COMPRA c on c.PRODUCTO_ID = v.PRODUCTO_ID -- NOTA: revisar este JOIN
+      group by  
+		      v.CANAL_VENTA_ID,
+			  CANAL_VENTA_TIPO,
+			  FECHA_MES,
+			  FECHA_AÑO
 go
 
 /*
@@ -605,7 +609,20 @@ Para simplificar, no es necesario tener en cuenta los descuentos aplicados.
 
 create view SE_APRUEBA_GDD.BI_V_PROD_MAYOR_RENT
 as
-    select  
+	select top 5
+		v.PRODUCTO_ID,
+		p.PRODUCTO_DESCRIPCION,
+		p.PRODUCTO_CATEGORIA,
+		sum(v.CANTIDAD * v.PRECIO) - sum(v.CANTIDAD * c.PRECIO) * 100 / count(f.FECHA_AÑO) rentabilidad
+	from
+		SE_APRUEBA_GDD.BI_VENTA v
+		join SE_APRUEBA_GDD.BI_COMPRA c on v.PRODUCTO_ID = c.PRODUCTO_ID
+		join SE_APRUEBA_GDD.BI_FECHA f on v.FECHA_ID = f.FECHA_ID
+		join SE_APRUEBA_GDD.PRODUCTO p on p.PRODUCTO_ID = v.PRODUCTO_ID
+	group by
+		c.PRODUCTO_ID
+
+    /*select  
         PRODUCTO_ID,
         PRODUCTO_NOMBRE,
         PRODUCTO_DESCRIPCION,
@@ -618,6 +635,104 @@ as
         )
         
         
-    from BI_PRODUCTO
+    from BI_PRODUCTO*/
 go
 
+
+/*
+Las 5 categorías de productos más vendidos por rango etario de clientes 
+por mes. 
+*/
+create view SE_APRUEBA_GDD.BI_CATEGORIAS_RANGO_ETARIO
+as
+	select
+		v1.RANGO_ID,
+		re.RANGO_EDAD_INI,
+		re.RANGO_EDAD_FIN,
+		v1.PRODUCTO_ID
+	from
+		SE_APRUEBA_GDD.BI_VENTA v1
+		join SE_APRUEBA_GDD.BI_FECHA f1 on v1.FECHA_ID = f1.FECHA_ID
+		join SE_APRUEBA_GDD.BI_RANGO_ETARIO re on v1.RANGO_ID = re.RANGO_ID
+	where
+		v1.PRODUCTO_ID in
+		(select top 5 v2.PRODUCTO_ID
+			from 
+				SE_APRUEBA_GDD.BI_VENTA v2
+				join SE_APRUEBA_GDD.BI_FECHA f2 on v2.FECHA_ID = f2.FECHA_ID
+		where
+			v1.RANGO_ID = v2.RANGO_ID
+			and
+			f1.FECHA_MES = f2.FECHA_MES
+		group by
+			v2.PRODUCTO_ID
+		order by
+			sum(v2.CANTIDAD) desc)
+	group by
+		v1.RANGO_ID, f1.FECHA_MES
+go
+
+
+/*
+Total de Ingresos por cada medio de pago por mes, descontando los costos 
+por medio de pago (en caso que aplique) y descuentos por medio de pago 
+(en caso que aplique) 
+*/
+--TODO: falta definir descuentos
+
+/*
+Importe total en descuentos aplicados según su tipo de descuento, por 
+canal de venta, por mes. Se entiende por tipo de descuento como los 
+correspondientes a envío, medio de pago, cupones, etc) 
+*/
+--TODO: igual al anterior
+
+/*
+Porcentaje de envíos realizados a cada Provincia por mes. El porcentaje 
+debe representar la cantidad de envíos realizados a cada provincia sobre 
+total de envío mensuales. 
+*/
+--TODO: falta definir provincias
+
+/*
+Valor promedio de envío por Provincia por Medio De Envío anual.
+*/
+--TODO: igual al anterior
+
+/*
+Aumento promedio de precios de cada proveedor anual. Para calcular este 
+indicador se debe tomar como referencia el máximo precio por año menos 
+el mínimo todo esto divido el mínimo precio del año. Teniendo en cuenta 
+que los precios siempre van en aumento.
+*/
+create view SE_APRUEBA_GDD.PROMEDIO_AUMENTO_PROVEEDOR
+as
+	select
+		c.PROVEEDOR_CUIT,
+		f.FECHA_AÑO,
+		--agregar producto ?
+		(max(c.PRECIO) - min(c.PRECIO)) / min(c.PRECIO) promedio_aumento
+	from
+		SE_APRUEBA_GDD.BI_COMPRA c
+		join SE_APRUEBA_GDD.BI_FECHA f on c.FECHA_ID = f.FECHA_ID
+	group by
+		c.PROVEEDOR_CUIT, f.FECHA_AÑO
+go
+
+
+/*
+Los 3 productos con mayor cantidad de reposición por mes.
+*/
+
+create view SE_APRUEBA_GDD.MAYOR_REPOSICION_POR_MES
+as
+	select top 3
+		c.PRODUCTO_ID,
+		sum(c.CANTIDAD) / count(distinct f.FECHA_ID) promedio_reposicion
+	from
+		SE_APRUEBA_GDD.BI_COMPRA c
+		join SE_APRUEBA_GDD.BI_FECHA f on f.FECHA_ID = c.FECHA_ID
+	group by
+		c.PRODUCTO_ID
+	order by
+		sum(c.CANTIDAD) / count(distinct f.FECHA_ID) desc

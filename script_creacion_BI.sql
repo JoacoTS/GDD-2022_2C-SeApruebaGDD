@@ -5,8 +5,24 @@ GO
 
 -- DROP DE VIEWS ----------------------------------------------------------------
 
-IF OBJECT_ID('SE_APRUEBA_GDD.BI_V_') IS NOT NULL
-  DROP VIEW SE_APRUEBA_GDD.BI_V_
+IF OBJECT_ID('SE_APRUEBA_GDD.BI_V_GANANCIAS_CANAL_VENTA') IS NOT NULL
+  DROP VIEW SE_APRUEBA_GDD.BI_V_GANANCIAS_CANAL_VENTA
+  GO
+
+IF OBJECT_ID('SE_APRUEBA_GDD.BI_V_PROD_MAYOR_RENT') IS NOT NULL
+  DROP VIEW SE_APRUEBA_GDD.BI_V_PROD_MAYOR_RENT
+  GO
+
+IF OBJECT_ID('SE_APRUEBA_GDD.BI_V_CATEGORIAS_RANGO_ETARIO') IS NOT NULL
+  DROP VIEW SE_APRUEBA_GDD.BI_V_CATEGORIAS_RANGO_ETARIO
+  GO
+
+IF OBJECT_ID('SE_APRUEBA_GDD.BI_V_PROMEDIO_AUMENTO_PROVEEDOR') IS NOT NULL
+  DROP VIEW SE_APRUEBA_GDD.BI_V_PROMEDIO_AUMENTO_PROVEEDOR
+  GO
+
+IF OBJECT_ID('SE_APRUEBA_GDD.BI_V_MAYOR_REPOSICION_POR_MES') IS NOT NULL
+  DROP VIEW SE_APRUEBA_GDD.BI_V_MAYOR_REPOSICION_POR_MES
   GO
 
 -- DROP TABLAS DIMENSIONALES ---------------------------------------------------------------
@@ -643,7 +659,7 @@ go
 Las 5 categorías de productos más vendidos por rango etario de clientes 
 por mes. 
 */
-create view SE_APRUEBA_GDD.BI_CATEGORIAS_RANGO_ETARIO
+create view SE_APRUEBA_GDD.BI_V_CATEGORIAS_RANGO_ETARIO
 as
 	select
 		v1.RANGO_ID,
@@ -705,7 +721,7 @@ indicador se debe tomar como referencia el máximo precio por año menos
 el mínimo todo esto divido el mínimo precio del año. Teniendo en cuenta 
 que los precios siempre van en aumento.
 */
-create view SE_APRUEBA_GDD.PROMEDIO_AUMENTO_PROVEEDOR
+create view SE_APRUEBA_GDD.BI_V_PROMEDIO_AUMENTO_PROVEEDOR
 as
 	select
 		c.PROVEEDOR_CUIT,
@@ -724,7 +740,7 @@ go
 Los 3 productos con mayor cantidad de reposición por mes.
 */
 
-create view SE_APRUEBA_GDD.MAYOR_REPOSICION_POR_MES
+create view SE_APRUEBA_GDD.BI_V_MAYOR_REPOSICION_POR_MES
 as
 	select top 3
 		c.PRODUCTO_ID,

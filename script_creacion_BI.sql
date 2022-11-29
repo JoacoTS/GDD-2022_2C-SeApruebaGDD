@@ -658,9 +658,7 @@ as
 		      v.CANAL_VENTA_ID,
 			  CANAL_VENTA_TIPO,
 			  FECHA_MES,
-			  FECHA_AÑO,
-			  mp.MEDIO_PAGO_COSTO,
-			  v.CANTIDAD_VENTAS
+			  FECHA_AÑO
 go
 
 
@@ -747,15 +745,19 @@ as
 	select
 		f.FECHA_AÑO,
 		f.FECHA_MES,
-		sum(v.PRECIO) - sum(mp.MEDIO_PAGO_COSTO) - sum(d.MONTO)
+		mp.MEDIO_PAGO_ID,
+		mp.MEDIO_PAGO_TIPO,
+		sum(v.PRECIO) - sum(mp.MEDIO_PAGO_COSTO) - sum(d.MONTO) ingresos
 	from
 		SE_APRUEBA_GDD_BI.BI_VENTA v
 		join SE_APRUEBA_GDD_BI.BI_MEDIO_PAGO_VENTA mp on mp.MEDIO_PAGO_ID = v.MEDIO_PAGO_ID
 		join SE_APRUEBA_GDD_BI.BI_FECHA f on f.FECHA_ID = v.FECHA_ID
 		left join SE_APRUEBA_GDD_BI.BI_DESCUENTO d on d.MEDIO_PAGO_ID = mp.MEDIO_PAGO_ID
 	group by
-		MEDIO_PAGO_ID
-
+		f.FECHA_AÑO,
+		f.FECHA_MES,
+		mp.MEDIO_PAGO_ID,
+		mp.MEDIO_PAGO_TIPO
 go
 
 
@@ -763,14 +765,84 @@ go
 --canal de venta, por mes. Se entiende por tipo de descuento como los 
 --correspondientes a envío, medio de pago, cupones, etc) 
 
---TODO: igual al anterior
+create view SE_APRUEBA_GDD_BI.BI_V_DESCUENTOS_X_CANAL_X_MES
+as
+	select
+		f.FECHA_AÑO,
+		f.FECHA_MES,
+		cv.CANAL_VENTA_TIPO,
+		td.TIPO_DESCUENTO_DESCRIPCION,
+		sum(d.MONTO) total_descuento
+	from
+		SE_APRUEBA_GDD_BI.BI_DESCUENTO d
+		join SE_APRUEBA_GDD_BI.BI_CANAL_VENTA cv on cv.CANAL_VENTA_ID = d.CANAL_VENTA_ID
+		join SE_APRUEBA_GDD_BI.BI_FECHA f on f.FECHA_ID = d.FECHA_ID
+		join SE_APRUEBA_GDD_BI.BI_TIPO_DESCUENTO td on td.TIPO_DESCUENTO_ID = d.TIPO_DESCUENTO
+	group by
+		f.FECHA_AÑO,
+		f.FECHA_MES,
+		cv.CANAL_VENTA_TIPO,
+		td.TIPO_DESCUENTO_DESCRIPCION
+go
 
 
 --Porcentaje de envíos realizados a cada Provincia por mes. El porcentaje 
 --debe representar la cantidad de envíos realizados a cada provincia sobre 
 --total de envío mensuales. 
 
---TODO: falta definir provincias
+create view SE_APRUEBA_GDD_BI.BI_V_PORCENTAJE_ENVIOS
+as
+	select
+		f.FECHA_AÑO,
+		f.FECHA_MES,
+		p.PROVINCIA_NOMBRE,
+		((select
+			count(
+				distinct
+				cast(v2.CANAL_VENTA_ID as varchar(10)) +
+				cast(v2.CLIENTE_ID as varchar(10)) +
+				cast(v2.FECHA_ID as varchar(10)) +
+				cast(v2.MEDIO_PAGO_ID as varchar(10)) +
+				cast(v2.PROVINCIA_ID as varchar(10)) +
+				cast(v2.RANGO_ID as varchar(10)) +
+				cast(v2.TIPO_ENVIO_ID as varchar(10))
+			)
+		from
+			SE_APRUEBA_GDD_BI.BI_VENTA v2
+		where
+			v2.FECHA_ID = v.FECHA_ID
+			and
+			v2.PROVINCIA_ID = v.PROVINCIA_ID
+			) * 100 / (select
+											count(
+											distinct
+											cast(v2.CANAL_VENTA_ID as varchar(10)) +
+											cast(v2.CLIENTE_ID as varchar(10)) +
+											cast(v2.FECHA_ID as varchar(10)) +
+											cast(v2.MEDIO_PAGO_ID as varchar(10)) +
+											cast(v2.PROVINCIA_ID as varchar(10)) +
+											cast(v2.RANGO_ID as varchar(10)) +
+											cast(v2.TIPO_ENVIO_ID as varchar(10))
+											)
+										from
+											SE_APRUEBA_GDD_BI.BI_VENTA v2
+										where
+											v2.FECHA_ID = v.FECHA_ID
+										)) porcentaje
+	from
+		SE_APRUEBA_GDD_BI.BI_VENTA v
+		join SE_APRUEBA_GDD_BI.BI_PROVINCIA p on p.PROVINCIA_ID = v.PROVINCIA_ID
+		join SE_APRUEBA_GDD_BI.BI_FECHA f on f.FECHA_ID = v.FECHA_ID
+	group by
+		v.FECHA_ID,
+		f.FECHA_AÑO,
+		f.FECHA_MES,
+		v.PROVINCIA_ID,
+		p.PROVINCIA_NOMBRE
+	order by
+		f.FECHA_AÑO,
+		f.FECHA_MES
+go
 
 
 --Valor promedio de envío por Provincia por Medio De Envío anual.

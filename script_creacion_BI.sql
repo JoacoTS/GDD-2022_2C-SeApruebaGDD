@@ -25,6 +25,18 @@ IF OBJECT_ID('SE_APRUEBA_GDD_BI.BI_V_MAYOR_REPOSICION_POR_MES') IS NOT NULL
   DROP VIEW SE_APRUEBA_GDD_BI.BI_V_MAYOR_REPOSICION_POR_MES
   GO
 
+IF OBJECT_ID('SE_APRUEBA_GDD_BI.BI_V_INGRESOS_X_MES_MEDIO_PAGO') IS NOT NULL
+  DROP VIEW SE_APRUEBA_GDD_BI.BI_V_INGRESOS_X_MES_MEDIO_PAGO
+  GO
+
+IF OBJECT_ID('SE_APRUEBA_GDD_BI.BI_V_DESCUENTOS_X_CANAL_X_MES') IS NOT NULL
+  DROP VIEW SE_APRUEBA_GDD_BI.BI_V_DESCUENTOS_X_CANAL_X_MES
+  GO
+
+IF OBJECT_ID('SE_APRUEBA_GDD_BI.BI_V_PORCENTAJE_ENVIOS') IS NOT NULL
+  DROP VIEW SE_APRUEBA_GDD_BI.BI_V_PORCENTAJE_ENVIOS
+  GO
+
 -- DROP PROCEDURES DE MIGRACION DE TABLAS DE HECHOS ---------------------------------------------------------------
 
 IF OBJECT_ID('SE_APRUEBA_GDD_BI.BI_MIGRAR_VENTA') IS NOT NULL
@@ -639,12 +651,25 @@ go
 
 create view SE_APRUEBA_GDD_BI.BI_V_GANANCIAS_CANAL_VENTA
 as
-  select  
-      v.CANAL_VENTA_ID,
-      CANAL_VENTA_TIPO,
-      FECHA_MES,
-      FECHA_AÑO,
-	  sum(v.PRECIO) - sum(c.PRECIO) - sum(mp.MEDIO_PAGO_COSTO) / (select
+select  
+    v.CANAL_VENTA_ID,
+    CANAL_VENTA_TIPO,
+    FECHA_MES,
+    FECHA_AÑO,
+	sum(v.PRECIO) -
+	(select sum(c.PRECIO) from SE_APRUEBA_GDD_BI.BI_COMPRA c
+	where
+		c.FECHA_ID = v.FECHA_ID
+		and
+		c.PRODUCTO_ID in
+		(select v2.PRODUCTO_ID from SE_APRUEBA_GDD_BI.BI_VENTA v2 where v2.FECHA_ID = v.FECHA_ID and v2.CANAL_VENTA_ID = v.CANAL_VENTA_ID)) -
+	  (sum(mp.MEDIO_PAGO_COSTO) /
+	  (select count(*) from SE_APRUEBA_GDD_BI.BI_VENTA v2
+							where
+								v2.FECHA_ID = v.FECHA_ID
+								and
+								v2.CANAL_VENTA_ID = v.CANAL_VENTA_ID)) 
+																  * (select
 																	count(
 																		distinct
 																		cast(v2.CLIENTE_ID as varchar(10)) +
@@ -659,22 +684,17 @@ as
 																	where
 																		v2.FECHA_ID = v.FECHA_ID
 																		and
-																		v2.CANAL_VENTA_ID = v.CANAL_VENTA_ID) ganancias          
+																		v2.CANAL_VENTA_ID = v.CANAL_VENTA_ID) ganancia
       from SE_APRUEBA_GDD_BI.BI_VENTA v
       join SE_APRUEBA_GDD_BI.BI_CANAL_VENTA cv on v.CANAL_VENTA_ID = cv.CANAL_VENTA_ID
       join SE_APRUEBA_GDD_BI.BI_FECHA f on v.FECHA_ID = f.FECHA_ID
       join SE_APRUEBA_GDD_BI.BI_MEDIO_PAGO_VENTA mp on v.MEDIO_PAGO_ID = mp.MEDIO_PAGO_ID
-	  join SE_APRUEBA_GDD_BI.BI_COMPRA c
-	  on
-		c.PRODUCTO_ID = v.PRODUCTO_ID
-		and
-		c.FECHA_ID = v.FECHA_ID
-      group by 
-			  v.FECHA_ID,
-		      v.CANAL_VENTA_ID,
-			  CANAL_VENTA_TIPO,
-			  FECHA_MES,
-			  FECHA_AÑO
+	group by 
+			v.FECHA_ID,
+		    v.CANAL_VENTA_ID,
+			CANAL_VENTA_TIPO,
+			FECHA_MES,
+			FECHA_AÑO
 go
 
 
@@ -692,17 +712,16 @@ as
 		f.FECHA_AÑO,
 		v.PRODUCTO_ID,
 		p.PRODUCTO_DESCRIPCION,
-		(sum(v.PRECIO) - sum(c.PRECIO)) * 100 / sum(v.PRECIO) rentabilidad
+		(sum(v.PRECIO) - (select sum(c.PRECIO) from SE_APRUEBA_GDD_BI.BI_COMPRA c join SE_APRUEBA_GDD_BI.BI_FECHA f2 on f2.FECHA_ID = c.FECHA_ID
+					where v.PRODUCTO_ID = c.PRODUCTO_ID and f2.FECHA_AÑO = f.FECHA_AÑO)) * 100 / sum(v.PRECIO) rentabilidad
 	from
 		SE_APRUEBA_GDD_BI.BI_VENTA v
 		join SE_APRUEBA_GDD_BI.BI_FECHA f on v.FECHA_ID = f.FECHA_ID
-		join SE_APRUEBA_GDD_BI.BI_COMPRA c on v.PRODUCTO_ID = c.PRODUCTO_ID and c.FECHA_ID = v.FECHA_ID
 		join SE_APRUEBA_GDD_BI.BI_PRODUCTO p on p.PRODUCTO_ID = v.PRODUCTO_ID
 	group by
 		f.FECHA_AÑO,
 		v.PRODUCTO_ID,
 		p.PRODUCTO_DESCRIPCION
-	order by 4 desc
 go
 
 
@@ -747,7 +766,6 @@ as
 		re.RANGO_EDAD_INI,
 		re.RANGO_EDAD_FIN,
 		c.CATEGORIA_DESCRIPCION
-	order by f1.FECHA_AÑO, f1.FECHA_MES, RANGO_ID
 go
 
 
@@ -763,15 +781,38 @@ as
 		f.FECHA_MES,
 		mp.MEDIO_PAGO_ID,
 		mp.MEDIO_PAGO_TIPO,
-		sum(v.PRECIO) - sum(mp.MEDIO_PAGO_COSTO) - sum(d.MONTO) ingresos
+		sum(v.PRECIO) - (sum(mp.MEDIO_PAGO_COSTO) + sum(d.MONTO)) *
+		((select
+			count(
+				distinct
+				cast(v2.CLIENTE_ID as varchar(10)) +
+				cast(v2.FECHA_ID as varchar(10)) +
+				cast(v2.MEDIO_PAGO_ID as varchar(10)) +
+				cast(v2.PROVINCIA_ID as varchar(10)) +
+				cast(v2.RANGO_ID as varchar(10)) +
+				cast(v2.TIPO_ENVIO_ID as varchar(10))
+			)
+			from
+				SE_APRUEBA_GDD_BI.BI_VENTA v2
+			where
+				v2.FECHA_ID = v.FECHA_ID
+				and
+				v2.MEDIO_PAGO_ID = v.MEDIO_PAGO_ID) /
+			(select count(*) from SE_APRUEBA_GDD_BI.BI_VENTA v2
+							where
+								v2.FECHA_ID = v.FECHA_ID
+								and
+								v2.MEDIO_PAGO_ID = v.MEDIO_PAGO_ID)) ingresos
 	from
 		SE_APRUEBA_GDD_BI.BI_VENTA v
 		join SE_APRUEBA_GDD_BI.BI_MEDIO_PAGO_VENTA mp on mp.MEDIO_PAGO_ID = v.MEDIO_PAGO_ID
 		join SE_APRUEBA_GDD_BI.BI_FECHA f on f.FECHA_ID = v.FECHA_ID
 		left join SE_APRUEBA_GDD_BI.BI_DESCUENTO d on d.MEDIO_PAGO_ID = mp.MEDIO_PAGO_ID
 	group by
+		v.FECHA_ID,
 		f.FECHA_AÑO,
 		f.FECHA_MES,
+		v.MEDIO_PAGO_ID,
 		mp.MEDIO_PAGO_ID,
 		mp.MEDIO_PAGO_TIPO
 go
@@ -855,16 +896,25 @@ as
 		f.FECHA_MES,
 		v.PROVINCIA_ID,
 		p.PROVINCIA_NOMBRE
-	order by
-		f.FECHA_AÑO,
-		f.FECHA_MES
 go
 
 
 --Valor promedio de envío por Provincia por Medio De Envío anual.
-
---TODO: igual al anterior
-
+/*
+create view SE_APRUEBA_GDD_BI.BI_V_PROMEDIO_ENVIO_PROVINCIA_ANUAL
+as
+select
+	f.FECHA_AÑO,
+	p.PROVINCIA_NOMBRE,
+	te.TIPO_ENVIO_DESCRIPCON,
+	sum()
+from
+	SE_APRUEBA_GDD_BI.BI_VENTA v
+	join SE_APRUEBA_GDD_BI.BI_PROVINCIA p on v.PROVINCIA_ID = p.PROVINCIA_ID
+	join SE_APRUEBA_GDD_BI.BI_TIPO_ENVIO te on te.TIPO_ENVIO_ID = v.TIPO_ENVIO_ID
+	join SE_APRUEBA_GDD_BI.BI_FECHA f on f.FECHA_ID = v.FECHA_ID
+go
+*/
 
 --Aumento promedio de precios de cada proveedor anual. Para calcular este 
 --indicador se debe tomar como referencia el máximo precio por año menos 
@@ -876,8 +926,7 @@ as
 	select
 		c.PROVEEDOR_CUIT,
 		f.FECHA_AÑO,
-		--agregar producto ?
-		(max(c.PRECIO) - min(c.PRECIO)) / min(c.PRECIO) promedio_aumento
+		(max(c.PRECIO / c.CANTIDAD) - min(c.PRECIO / c.CANTIDAD)) / min(c.PRECIO / c.CANTIDAD) promedio_aumento
 	from
 		SE_APRUEBA_GDD_BI.BI_COMPRA c
 		join SE_APRUEBA_GDD_BI.BI_FECHA f on c.FECHA_ID = f.FECHA_ID

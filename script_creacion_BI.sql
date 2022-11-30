@@ -644,7 +644,22 @@ as
       CANAL_VENTA_TIPO,
       FECHA_MES,
       FECHA_AÑO,
-	  sum(v.PRECIO) - sum(c.PRECIO) - sum(mp.MEDIO_PAGO_COSTO) ganancias          
+	  sum(v.PRECIO) - sum(c.PRECIO) - sum(mp.MEDIO_PAGO_COSTO) / (select
+																	count(
+																		distinct
+																		cast(v2.CLIENTE_ID as varchar(10)) +
+																		cast(v2.FECHA_ID as varchar(10)) +
+																		cast(v2.MEDIO_PAGO_ID as varchar(10)) +
+																		cast(v2.PROVINCIA_ID as varchar(10)) +
+																		cast(v2.RANGO_ID as varchar(10)) +
+																		cast(v2.TIPO_ENVIO_ID as varchar(10))
+																	)
+																	from
+																		SE_APRUEBA_GDD_BI.BI_VENTA v2
+																	where
+																		v2.FECHA_ID = v.FECHA_ID
+																		and
+																		v2.CANAL_VENTA_ID = v.CANAL_VENTA_ID) ganancias          
       from SE_APRUEBA_GDD_BI.BI_VENTA v
       join SE_APRUEBA_GDD_BI.BI_CANAL_VENTA cv on v.CANAL_VENTA_ID = cv.CANAL_VENTA_ID
       join SE_APRUEBA_GDD_BI.BI_FECHA f on v.FECHA_ID = f.FECHA_ID
@@ -654,7 +669,8 @@ as
 		c.PRODUCTO_ID = v.PRODUCTO_ID
 		and
 		c.FECHA_ID = v.FECHA_ID
-      group by  
+      group by 
+			  v.FECHA_ID,
 		      v.CANAL_VENTA_ID,
 			  CANAL_VENTA_TIPO,
 			  FECHA_MES,

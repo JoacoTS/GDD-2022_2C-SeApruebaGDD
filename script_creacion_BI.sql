@@ -900,21 +900,39 @@ go
 
 
 --Valor promedio de envío por Provincia por Medio De Envío anual.
-/*
+
 create view SE_APRUEBA_GDD_BI.BI_V_PROMEDIO_ENVIO_PROVINCIA_ANUAL
 as
 select
-	f.FECHA_AÑO,
+	T.FECHA_AÑO,
+	T.PROVINCIA_NOMBRE,
+	T.TIPO_ENVIO_DESCRIPCON,
+    avg(envio) as PROMEDIO
+from
+    (select
+    f.FECHA_AÑO,
 	p.PROVINCIA_NOMBRE,
 	te.TIPO_ENVIO_DESCRIPCON,
-	sum()
-from
-	SE_APRUEBA_GDD_BI.BI_VENTA v
-	join SE_APRUEBA_GDD_BI.BI_PROVINCIA p on v.PROVINCIA_ID = p.PROVINCIA_ID
+    avg(ENVIO_VENTA_PRECIO) as envio
+    from SE_APRUEBA_GDD_BI.BI_VENTA v
+    join SE_APRUEBA_GDD_BI.BI_PROVINCIA p on v.PROVINCIA_ID = p.PROVINCIA_ID
 	join SE_APRUEBA_GDD_BI.BI_TIPO_ENVIO te on te.TIPO_ENVIO_ID = v.TIPO_ENVIO_ID
 	join SE_APRUEBA_GDD_BI.BI_FECHA f on f.FECHA_ID = v.FECHA_ID
+    group by v.FECHA_ID,
+        v.CLIENTE_ID,
+        v.RANGO_ID,
+        v.MEDIO_PAGO_ID,
+        v.CANAL_VENTA_ID,
+        v.TIPO_ENVIO_ID,
+        v.PROVINCIA_ID,
+        f.FECHA_AÑO,
+        p.PROVINCIA_NOMBRE,
+	    te.TIPO_ENVIO_DESCRIPCON)as T
+	group by T.FECHA_AÑO,
+	T.PROVINCIA_NOMBRE,
+	T.TIPO_ENVIO_DESCRIPCON
 go
-*/
+
 
 --Aumento promedio de precios de cada proveedor anual. Para calcular este 
 --indicador se debe tomar como referencia el máximo precio por año menos 
